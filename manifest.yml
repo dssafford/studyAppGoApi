@@ -1,0 +1,12 @@
+---
+applications:
+  - name: godougpersonapi
+    memory: 256M
+    instances: 1
+    buildpack: go_buildpack
+    env:
+     GOVERSION: go1.9
+     GOPACKAGENAME: APIMySql
+    services:
+      - mysql
+
