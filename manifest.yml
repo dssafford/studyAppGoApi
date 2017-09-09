@@ -6,7 +6,6 @@ applications:
     buildpack: go_buildpack
     env:
      GOVERSION: go1.9
-     GOPACKAGENAME: APIMySql
     services:
       - mysql
 
