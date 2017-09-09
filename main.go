@@ -11,29 +11,42 @@ import (
 	"os"
 	"log"
 
+	"net/url"
 )
 
 func main() {
-	var db *sql.DB
-	var err error
+	//var db *sql.DB
+	//var err error
 
-	//databaseUrl := os.Getenv("DATABASE_URL")
-	//if databaseUrl == "" {
-	//	fmt.Println("*** Using local database ***")
-	//	databaseUrl = "root:mypassword@tcp(0.0.0.0:9010)/douggo"
+	databaseUrl := os.Getenv("DATABASE_URL")
+
+	if databaseUrl == "" {
+		fmt.Println("*** Using local database ***")
+		databaseUrl = "mysql://root:mypassword@0.0.0.0:9010/douggo"
+		//fmt.Println("*** Using local database *** == " + )
+	//} else {
+	//
+	//	databaseUrl := "b8dd0c2d93dec9:ba1aea79@tcp(us-cdbr-iron-east-05.cleardb.net:3306)/ad_547d2c245fcfb2b"
 	//	db, err = sql.Open("mysql", databaseUrl)
 	//	if err != nil {
 	//		fmt.Print("xxxxxxxxxxxxx xxxxxxxxxxx database error == " + err.Error())
 	//	}
-	//} else {
+	}
 
-		databaseUrl := "b8dd0c2d93dec9:ba1aea79@tcp(us-cdbr-iron-east-05.cleardb.net:3306)/ad_547d2c245fcfb2b"
-		db, err = sql.Open("mysql", databaseUrl)
-		if err != nil {
-			fmt.Print("xxxxxxxxxxxxx xxxxxxxxxxx database error == " + err.Error())
-		}
-	//}
-	fmt.Println("database URL = " + databaseUrl)
+	url, err := url.Parse(databaseUrl)
+
+	if err != nil {
+		log.Fatalln("Error parsing DATABASE_URL", err)
+	}
+
+	fmt.Println("database URL = " + formattedUrl(url))
+
+	db, err := sql.Open("mysql", formattedUrl(url))
+
+	if err != nil {
+		log.Fatalln("Failed to establish database connection", err)
+	}
+
 
 	//db, err := sql.Open("mysql", databaseUrl)
 	//if err != nil {
@@ -190,4 +203,13 @@ func getPort() string {
 	} else {
 		return configuredPort
 	}
+}
+
+func formattedUrl(url *url.URL) string {
+	return fmt.Sprintf(
+		"%v@tcp(%v)%v?parseTime=true",
+		url.User,
+		url.Host,
+		url.Path,
+	)
 }
