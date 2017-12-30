@@ -1,17 +1,18 @@
 package main
 
 import (
-	"bytes"
+	// "bytes"
 	"database/sql"
 	"fmt"
 	"net/http"
-
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	"os"
 	"log"
-
 	"net/url"
+	"time"
+	
 )
 
 func main() {
@@ -22,7 +23,7 @@ func main() {
 
 	if databaseUrl == "" {
 		fmt.Println("*** Using local database ***")
-		databaseUrl = "mysql://root:mypassword@0.0.0.0:9010/douggo"
+		databaseUrl = "mysql://root:mypassword@0.0.0.0:9015/studyApp"
 		//fmt.Println("*** Using local database *** == " + )
 	//} else {
 	//
@@ -59,150 +60,186 @@ func main() {
 	if err != nil {
 		fmt.Print("database can't ping == " + err.Error())
 	}
-	type Person struct {
-		Id         int
-		First_Name string
-		Last_Name  string
+	type Entry struct {
+		Id int
+		Date_Added time.Time
+		Project string
+		File_Directory string
+		Machine string
+		Technology	string
+		Version int
+		Comments string
+		// is_active bool
 	}
 	router := gin.Default()
+	// - No origin allowed by default
+	// - GET,POST, PUT, HEAD methods
+	// - Credentials share disabled
+	// - Preflight requests cached for 12 hours
+	config := cors.DefaultConfig()
+	config.AllowOrigins = []string{"http://localhost:4500"}
+	// config.AddAllowOrigins("http://facebook.com")
+	// config.AllowOrigins == []string{"http://google.com", "http://facebook.com"}
 
+	router.Use(cors.New(config))
+	//router.Run()
 
-	router.GET("/data", func(c *gin.Context) {
-		var result gin.H
+	// router.GET("/data", func(c *gin.Context) {
+	// 	var result gin.H
 
-		result = gin.H{"databaseUrl:": databaseUrl}
+	// 	result = gin.H{"databaseUrl:": databaseUrl}
 
-		c.JSON(http.StatusOK, result )
+	// 	c.JSON(http.StatusOK, result )
 
-	})
+	// })
 
 	// GET a person detail
-	router.GET("/person/:id", func(c *gin.Context) {
-		var (
-			person Person
-			result gin.H
-		)
-		id := c.Param("id")
-		row := db.QueryRow("select id, first_name, last_name from person where id = ?;", id)
-		err = row.Scan(&person.Id, &person.First_Name, &person.Last_Name)
-		if err != nil {
-			// If no results send null
-			result = gin.H{
-				"result": nil,
-				"count":  0,
-			}
-		} else {
-			result = gin.H{
-				"result": person,
-				"count":  1,
-			}
-		}
-		c.JSON(http.StatusOK, result)
-	})
+	// router.GET("/entry/:id", func(c *gin.Context) {
+	// 	var (
+	// 		entry Entry
+	// 		result gin.H
+	// 	)
+	// 	id := c.Param("id")
+	// 	row := db.QueryRow("select id, project, file_directory, machine, technology, version, comments from journal where id = ?;", id)
+	// 	// err = row.Scan(&entry.id, &entry.date_added, &entry.project, &entry.file_directory, &entry.machine, &entry.technology, &entry.version, &entry.comments, &entry.is_active)
+	// 	err = row.Scan(&entry.id, &entry.project, &entry.file_directory, &entry.machine, &entry.technology, &entry.version, &entry.comments)
+	// 	if err != nil {
+	// 		// If no results send null
+	// 		result = gin.H{
+	// 			"result": nil,
+	// 			"count":  0,
+	// 		}
+	// 	} else {
+	// 		result = gin.H{
+	// 			"result": entry,
+	// 			"count":  1,
+	// 		}
+	// 	}
+	// 	c.JSON(http.StatusOK, result)
+	// })
 
 	// GET all persons
-	router.GET("/persons", func(c *gin.Context) {
+	router.GET("/entries", func(c *gin.Context) {
 		var (
-			person  Person
-			persons []Person
+			entry  Entry
+			entrys []Entry
 		)
-		rows, err := db.Query("select id, first_name, last_name from person;")
+		rows, err := db.Query("select Id, Date_Added, Project, File_Directory, Machine, Technology, Version, Comments from journal;")
 		if err != nil {
 			fmt.Print(err.Error())
 		}
 		for rows.Next() {
-			err = rows.Scan(&person.Id, &person.First_Name, &person.Last_Name)
-			persons = append(persons, person)
+			// err = rows.Scan(&entry.id, &entry.date_added, &entry.project, &entry.file_directory, &entry.machine, &entry.technology, &entry.version, &entry.comments, &entry.is_active)
+			err = rows.Scan(&entry.Id, &entry.Date_Added, &entry.Project, &entry.File_Directory, &entry.Machine, &entry.Technology, &entry.Version, &entry.Comments)
+			entrys = append(entrys, entry)
+			
 			if err != nil {
 				fmt.Print(err.Error())
 			}
 		}
 		defer rows.Close()
 		c.JSON(http.StatusOK, gin.H{
-			"result": persons,
-			"count":  len(persons),
+			"result": entrys,
+			"count":  len(entrys),
 		})
 	})
 
-	// POST new person details
-	router.POST("/person", func(c *gin.Context) {
-		var buffer bytes.Buffer
-		first_name := c.PostForm("first_name")
-		last_name := c.PostForm("last_name")
-		stmt, err := db.Prepare("insert into person (first_name, last_name) values(?,?);")
-		if err != nil {
-			fmt.Print(err.Error())
-		}
-		_, err = stmt.Exec(first_name, last_name)
+	// // POST new person details
+	// router.POST("/entry", func(c *gin.Context) {
+	// 	var buffer bytes.Buffer
+	// 	project := c.PostForm("project")
+	// 	date_added := c.PostForm("date_added")
+	// 	file_directory := c.PostForm("file_directory")
+	// 	machine := c.PostForm("machine")
+	// 	technology := c.PostForm("technology")
+	// 	version := c.PostForm("version")
+	// 	comments := c.PostForm("comments")
+	// 	is_active := c.PostForm("is_active")
+	// 	stmt, err := db.Prepare("insert into journal (project, date_added, file_directory, machine, technology, version, comments, is_active) values(?,?,?,?,?,?,?,?) where id= ?;")
+	// 	if err != nil {
+	// 		fmt.Print(err.Error())
+	// 	}
+	// 	_, err = stmt.Exec(project, date_added, file_directory, machine, technology, version, comments, is_active)
 
-		if err != nil {
-			fmt.Print(err.Error())
-		}
+	// 	if err != nil {
+	// 		fmt.Print(err.Error())
+	// 	}
 
-		// Fastest way to append strings
-		buffer.WriteString(first_name)
-		buffer.WriteString(" ")
-		buffer.WriteString(last_name)
-		defer stmt.Close()
-		name := buffer.String()
-		c.JSON(http.StatusOK, gin.H{
-			"message": fmt.Sprintf(" %s successfully created", name),
-		})
-	})
+	// 	// Fastest way to append strings
+	// 	buffer.WriteString(project)
+	// 	buffer.WriteString(" ")
+	// 	buffer.WriteString(machine)
+	// 	defer stmt.Close()
+	// 	name := buffer.String()
+	// 	c.JSON(http.StatusOK, gin.H{
+	// 		"message": fmt.Sprintf(" %s successfully created", name),
+	// 	})
+	// })
 
-	// PUT - update a person details
-	router.PUT("/person", func(c *gin.Context) {
-		var buffer bytes.Buffer
-		id := c.Query("id")
-		first_name := c.PostForm("first_name")
-		last_name := c.PostForm("last_name")
-		stmt, err := db.Prepare("update person set first_name= ?, last_name= ? where id= ?;")
-		if err != nil {
-			fmt.Print(err.Error())
-		}
-		_, err = stmt.Exec(first_name, last_name, id)
-		if err != nil {
-			fmt.Print(err.Error())
-		}
+	// // PUT - update a person details
+	// router.PUT("/entry", func(c *gin.Context) {
+	// 	var buffer bytes.Buffer
+	// 	id := c.Query("id")
+	// 	project := c.PostForm("project")
+	// 	date_added := c.PostForm("date_added")
+	// 	file_directory := c.PostForm("file_directory")
+	// 	machine := c.PostForm("machine")
+	// 	technology := c.PostForm("technology")
+	// 	version := c.PostForm("version")
+	// 	comments := c.PostForm("comments")
+	// 	is_active := c.PostForm("is_active")
+	// 	stmt, err := db.Prepare("update journal set project= ?, date_added= ?, file_directory= ?, machine=?, technology=?,version=?, comments=?, is_active=? where id= ?;")
+	// 	if err != nil {
+	// 		fmt.Print(err.Error())
+	// 	}
+	// 	_, err = stmt.Exec(project, date_added, file_directory, machine, technology, version, comments, is_active, id)
+	// 	if err != nil {
+	// 		fmt.Print(err.Error())
+	// 	}
 
-		// Fastest way to append strings
-		buffer.WriteString(first_name)
-		buffer.WriteString(" ")
-		buffer.WriteString(last_name)
-		defer stmt.Close()
-		name := buffer.String()
-		c.JSON(http.StatusOK, gin.H{
-			"message": fmt.Sprintf("Successfully updated to %s", name),
-		})
-	})
+	// 	// Fastest way to append strings
+	// 	buffer.WriteString(project)
+	// 	buffer.WriteString(" ")
+	// 	buffer.WriteString(machine)
+	// 	defer stmt.Close()
+	// 	updatedEntry := buffer.String()
+	// 	c.JSON(http.StatusOK, gin.H{
+	// 		"message": fmt.Sprintf("Successfully updated to %s", updatedEntry),
+	// 	})
+	// })
 
-	// Delete resources
-	router.DELETE("/person", func(c *gin.Context) {
-		id := c.Query("id")
-		stmt, err := db.Prepare("delete from person where id= ?;")
-		if err != nil {
-			fmt.Print(err.Error())
-		}
-		_, err = stmt.Exec(id)
-		if err != nil {
-			fmt.Print(err.Error())
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"message": fmt.Sprintf("Successfully deleted user: %s", id),
-		})
-	})
+	// // Delete resources
+	// router.DELETE("/entry", func(c *gin.Context) {
+	// 	id := c.Query("id")
+	// 	stmt, err := db.Prepare("delete from journal where id= ?;")
+	// 	if err != nil {
+	// 		fmt.Print(err.Error())
+	// 	}
+	// 	_, err = stmt.Exec(id)
+	// 	if err != nil {
+	// 		fmt.Print(err.Error())
+	// 	}
+	// 	c.JSON(http.StatusOK, gin.H{
+	// 		"message": fmt.Sprintf("Successfully deleted entry: %s", id),
+	// 	})
+	// })
+
+
 	if err := http.ListenAndServe(fmt.Sprintf(":%v", getPort()), router); err != nil {
 		log.Fatalln(err)
 	}
-	//router.Run(":3000")
+
 }
 
 func getPort() string {
 	if configuredPort := os.Getenv("PORT"); configuredPort == "" {
+		fmt.Println("usimg port = 3000")
 		return "3000"
 	} else {
+		fmt.Println("using port = " + configuredPort)
 		return configuredPort
 	}
+
 }
 
 func formattedUrl(url *url.URL) string {

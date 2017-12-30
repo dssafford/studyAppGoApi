@@ -4,8 +4,10 @@ applications:
     memory: 256M
     instances: 1
     buildpack: go_buildpack
+
     env:
-     GOVERSION: go1.9
+      GOVERSION: go1.8.3
+      GOPACKAGENAME: APIMySql
     services:
       - mysql
 
