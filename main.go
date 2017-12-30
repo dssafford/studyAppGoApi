@@ -69,7 +69,7 @@ func main() {
 		Technology	string
 		Version int
 		Comments string
-		// is_active bool
+		Is_Active bool
 	}
 	router := gin.Default()
 	// - No origin allowed by default
@@ -124,13 +124,13 @@ func main() {
 			entry  Entry
 			entrys []Entry
 		)
-		rows, err := db.Query("select Id, Date_Added, Project, File_Directory, Machine, Technology, Version, Comments from journal;")
+		rows, err := db.Query("select Id, Date_Added, Project, File_Directory, Machine, Technology, Version, Comments, Is_Active from journal;")
 		if err != nil {
 			fmt.Print(err.Error())
 		}
 		for rows.Next() {
 			// err = rows.Scan(&entry.id, &entry.date_added, &entry.project, &entry.file_directory, &entry.machine, &entry.technology, &entry.version, &entry.comments, &entry.is_active)
-			err = rows.Scan(&entry.Id, &entry.Date_Added, &entry.Project, &entry.File_Directory, &entry.Machine, &entry.Technology, &entry.Version, &entry.Comments)
+			err = rows.Scan(&entry.Id, &entry.Date_Added, &entry.Project, &entry.File_Directory, &entry.Machine, &entry.Technology, &entry.Version, &entry.Comments, &entry.Is_Active)
 			entrys = append(entrys, entry)
 			
 			if err != nil {
