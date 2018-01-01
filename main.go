@@ -11,8 +11,8 @@ import (
 	"os"
 	"log"
 	"net/url"
-	"time"
-	
+	"bytes"
+	"strconv"
 )
 
 func main() {
@@ -23,7 +23,7 @@ func main() {
 
 	if databaseUrl == "" {
 		fmt.Println("*** Using local database ***")
-		databaseUrl = "mysql://root:mypassword@0.0.0.0:9015/studyApp"
+		databaseUrl = "mysql://root:mypassword@0.0.0.0:9015/studyAppDev"
 		//fmt.Println("*** Using local database *** == " + )
 	//} else {
 	//
@@ -62,7 +62,7 @@ func main() {
 	}
 	type Entry struct {
 		Id int
-		Date_Added time.Time
+		Date_Added string
 		Project string
 		File_Directory string
 		Machine string
@@ -77,46 +77,46 @@ func main() {
 	// - Credentials share disabled
 	// - Preflight requests cached for 12 hours
 	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"http://localhost:4500"}
+	config.AllowOrigins = []string{"http://localhost:4500", "http://localhost:4200"}
 	// config.AddAllowOrigins("http://facebook.com")
 	// config.AllowOrigins == []string{"http://google.com", "http://facebook.com"}
 
 	router.Use(cors.New(config))
 	//router.Run()
 
-	// router.GET("/data", func(c *gin.Context) {
-	// 	var result gin.H
+	router.GET("/data", func(c *gin.Context) {
+		var result gin.H
 
-	// 	result = gin.H{"databaseUrl:": databaseUrl}
+		result = gin.H{"databaseUrl:": databaseUrl}
 
-	// 	c.JSON(http.StatusOK, result )
+		c.JSON(http.StatusOK, result )
 
-	// })
+	})
 
 	// GET a person detail
-	// router.GET("/entry/:id", func(c *gin.Context) {
-	// 	var (
-	// 		entry Entry
-	// 		result gin.H
-	// 	)
-	// 	id := c.Param("id")
-	// 	row := db.QueryRow("select id, project, file_directory, machine, technology, version, comments from journal where id = ?;", id)
-	// 	// err = row.Scan(&entry.id, &entry.date_added, &entry.project, &entry.file_directory, &entry.machine, &entry.technology, &entry.version, &entry.comments, &entry.is_active)
-	// 	err = row.Scan(&entry.id, &entry.project, &entry.file_directory, &entry.machine, &entry.technology, &entry.version, &entry.comments)
-	// 	if err != nil {
-	// 		// If no results send null
-	// 		result = gin.H{
-	// 			"result": nil,
-	// 			"count":  0,
-	// 		}
-	// 	} else {
-	// 		result = gin.H{
-	// 			"result": entry,
-	// 			"count":  1,
-	// 		}
-	// 	}
-	// 	c.JSON(http.StatusOK, result)
-	// })
+	router.GET("/entry/:id", func(c *gin.Context) {
+		var (
+			entry Entry
+			result gin.H
+		)
+		id := c.Param("id")
+		row := db.QueryRow("select id, project, file_directory, machine, technology, version, comments from journal where id = ?;", id)
+		// err = row.Scan(&entry.id, &entry.date_added, &entry.project, &entry.file_directory, &entry.machine, &entry.technology, &entry.version, &entry.comments, &entry.is_active)
+		err = row.Scan(&entry.Id, &entry.Project, &entry.File_Directory, &entry.Machine, &entry.Technology, &entry.Version, &entry.Comments)
+		if err != nil {
+			// If no results send null
+			result = gin.H{
+				"result": nil,
+				"count":  0,
+			}
+		} else {
+			result = gin.H{
+				"result": entry,
+				"count":  1,
+			}
+		}
+		c.JSON(http.StatusOK, result)
+	})
 
 	// GET all persons
 	router.GET("/entries", func(c *gin.Context) {
@@ -144,85 +144,112 @@ func main() {
 		})
 	})
 
-	// // POST new person details
-	// router.POST("/entry", func(c *gin.Context) {
-	// 	var buffer bytes.Buffer
-	// 	project := c.PostForm("project")
-	// 	date_added := c.PostForm("date_added")
-	// 	file_directory := c.PostForm("file_directory")
-	// 	machine := c.PostForm("machine")
-	// 	technology := c.PostForm("technology")
-	// 	version := c.PostForm("version")
-	// 	comments := c.PostForm("comments")
-	// 	is_active := c.PostForm("is_active")
-	// 	stmt, err := db.Prepare("insert into journal (project, date_added, file_directory, machine, technology, version, comments, is_active) values(?,?,?,?,?,?,?,?) where id= ?;")
-	// 	if err != nil {
-	// 		fmt.Print(err.Error())
-	// 	}
-	// 	_, err = stmt.Exec(project, date_added, file_directory, machine, technology, version, comments, is_active)
+	// POST new person details
+	router.POST("/entry", func(c *gin.Context) {
+		var buffer bytes.Buffer
 
-	// 	if err != nil {
-	// 		fmt.Print(err.Error())
-	// 	}
+		// ==================
 
-	// 	// Fastest way to append strings
-	// 	buffer.WriteString(project)
-	// 	buffer.WriteString(" ")
-	// 	buffer.WriteString(machine)
-	// 	defer stmt.Close()
-	// 	name := buffer.String()
-	// 	c.JSON(http.StatusOK, gin.H{
-	// 		"message": fmt.Sprintf(" %s successfully created", name),
-	// 	})
-	// })
+	var insertStatement string
+	var entry Entry
+	c.Bind(&entry)
+	log.Println(entry.Project)
 
-	// // PUT - update a person details
-	// router.PUT("/entry", func(c *gin.Context) {
-	// 	var buffer bytes.Buffer
-	// 	id := c.Query("id")
-	// 	project := c.PostForm("project")
-	// 	date_added := c.PostForm("date_added")
-	// 	file_directory := c.PostForm("file_directory")
-	// 	machine := c.PostForm("machine")
-	// 	technology := c.PostForm("technology")
-	// 	version := c.PostForm("version")
-	// 	comments := c.PostForm("comments")
-	// 	is_active := c.PostForm("is_active")
-	// 	stmt, err := db.Prepare("update journal set project= ?, date_added= ?, file_directory= ?, machine=?, technology=?,version=?, comments=?, is_active=? where id= ?;")
-	// 	if err != nil {
-	// 		fmt.Print(err.Error())
-	// 	}
-	// 	_, err = stmt.Exec(project, date_added, file_directory, machine, technology, version, comments, is_active, id)
-	// 	if err != nil {
-	// 		fmt.Print(err.Error())
-	// 	}
 
-	// 	// Fastest way to append strings
-	// 	buffer.WriteString(project)
-	// 	buffer.WriteString(" ")
-	// 	buffer.WriteString(machine)
-	// 	defer stmt.Close()
-	// 	updatedEntry := buffer.String()
-	// 	c.JSON(http.StatusOK, gin.H{
-	// 		"message": fmt.Sprintf("Successfully updated to %s", updatedEntry),
-	// 	})
-	// })
+		// ==================
+		project := entry.Project
+		date_added := entry.Date_Added
+		file_directory := entry.File_Directory
+		machine := entry.Machine
+		technology := entry.Technology
+		version := entry.Version
+		comments := entry.Comments
+		is_active := entry.Is_Active
 
-	// // Delete resources
-	// router.DELETE("/entry", func(c *gin.Context) {
-	// 	id := c.Query("id")
-	// 	stmt, err := db.Prepare("delete from journal where id= ?;")
-	// 	if err != nil {
-	// 		fmt.Print(err.Error())
-	// 	}
-	// 	_, err = stmt.Exec(id)
-	// 	if err != nil {
-	// 		fmt.Print(err.Error())
-	// 	}
-	// 	c.JSON(http.StatusOK, gin.H{
-	// 		"message": fmt.Sprintf("Successfully deleted entry: %s", id),
-	// 	})
-	// })
+		log.Println("project =" + project)
+		log.Println("date_added =" + date_added)
+		log.Println("file_directory =" + file_directory)
+		log.Println("machine =" + machine)
+		log.Println("technology =" + technology)
+		log.Println("version =" + strconv.Itoa(version))
+		log.Println("comments =" + comments)
+
+		log.Println("is_active= " + strconv.FormatBool(is_active))
+		//insert into journal(`project`, `date_added`, `machine`) values('dude', '2017/01/01', 'shit');
+		insertStatement = "insert into journal (`project`, `date_added`, `file_directory`, `machine`, `technology`, `version`, `comments`, `is_active`) "
+		insertStatement = insertStatement + " values('" + project + "','" + date_added + "','" + file_directory + "','" + machine + "','" +  technology + "',"
+		insertStatement = insertStatement + strconv.Itoa(version) + ",'" + comments + "'," + strconv.FormatBool(is_active) + ");"
+
+		log.Println("full insert string = " + insertStatement)
+
+		stmt, err := db.Prepare(insertStatement)
+		if err != nil {
+			fmt.Print(err.Error())
+		}
+		_, err = stmt.Exec()
+
+		if err != nil {
+			fmt.Print("stmt.Exec error = " + err.Error())
+		}
+
+		// Fastest way to append strings
+		buffer.WriteString(project)
+		buffer.WriteString(" --- ")
+		buffer.WriteString(machine)
+		defer stmt.Close()
+		name := buffer.String()
+		c.JSON(http.StatusOK, gin.H{
+			"message": fmt.Sprintf(" %s successfully created", name),
+		})
+	})
+
+	// PUT - update a person details
+	router.PUT("/entry", func(c *gin.Context) {
+		var buffer bytes.Buffer
+		id := c.Query("id")
+		project := c.PostForm("project")
+		date_added := c.PostForm("date_added")
+		file_directory := c.PostForm("file_directory")
+		machine := c.PostForm("machine")
+		technology := c.PostForm("technology")
+		version := c.PostForm("version")
+		comments := c.PostForm("comments")
+		is_active := c.PostForm("is_active")
+		stmt, err := db.Prepare("update journal set project= ?, date_added= ?, file_directory= ?, machine=?, technology=?,version=?, comments=?, is_active=? where id= ?;")
+		if err != nil {
+			fmt.Print(err.Error())
+		}
+		_, err = stmt.Exec(project, date_added, file_directory, machine, technology, version, comments, is_active, id)
+		if err != nil {
+			fmt.Print(err.Error())
+		}
+
+		// Fastest way to append strings
+		buffer.WriteString(project)
+		buffer.WriteString(" ")
+		buffer.WriteString(machine)
+		defer stmt.Close()
+		updatedEntry := buffer.String()
+		c.JSON(http.StatusOK, gin.H{
+			"message": fmt.Sprintf("Successfully updated to %s", updatedEntry),
+		})
+	})
+
+	// Delete resources
+	router.DELETE("/entry", func(c *gin.Context) {
+		id := c.Query("id")
+		stmt, err := db.Prepare("delete from journal where id= ?;")
+		if err != nil {
+			fmt.Print(err.Error())
+		}
+		_, err = stmt.Exec(id)
+		if err != nil {
+			fmt.Print(err.Error())
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"message": fmt.Sprintf("Successfully deleted entry: %s", id),
+		})
+	})
 
 
 	if err := http.ListenAndServe(fmt.Sprintf(":%v", getPort()), router); err != nil {
@@ -230,6 +257,17 @@ func main() {
 	}
 
 }
+
+// func ParseBool(str string) (bool, error) {
+//   	switch str {
+//   	case "1", "t", "T", "true", "TRUE", "True":
+//   		return true, nil
+//   	case "0", "f", "F", "false", "FALSE", "False":
+//   		return false, nil
+//   	}
+//   	return false, syntaxError("ParseBool", str)
+//   }
+
 
 func getPort() string {
 	if configuredPort := os.Getenv("PORT"); configuredPort == "" {
