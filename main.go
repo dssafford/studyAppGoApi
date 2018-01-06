@@ -12,7 +12,7 @@ import (
 	"log"
 	"net/url"
 	"bytes"
-	"strconv"
+
 )
 
 func main() {
@@ -67,9 +67,9 @@ func main() {
 		File_Directory string
 		Machine string
 		Technology	string
-		Version int
+		Version string
 		Comments string
-		Is_Active bool
+		Is_Active string
 	}
 	router := gin.Default()
 	// - No origin allowed by default
@@ -100,9 +100,9 @@ func main() {
 			result gin.H
 		)
 		id := c.Param("id")
-		row := db.QueryRow("select id, project, file_directory, machine, technology, version, comments from journal where id = ?;", id)
+		row := db.QueryRow("select id, project, file_directory, machine, technology, version, comments, is_active from journal where id = ?;", id)
 		// err = row.Scan(&entry.id, &entry.date_added, &entry.project, &entry.file_directory, &entry.machine, &entry.technology, &entry.version, &entry.comments, &entry.is_active)
-		err = row.Scan(&entry.Id, &entry.Project, &entry.File_Directory, &entry.Machine, &entry.Technology, &entry.Version, &entry.Comments)
+		err = row.Scan(&entry.Id, &entry.Project, &entry.File_Directory, &entry.Machine, &entry.Technology, &entry.Version, &entry.Comments, &entry.Is_Active)
 		if err != nil {
 			// If no results send null
 			result = gin.H{
@@ -118,8 +118,8 @@ func main() {
 		c.JSON(http.StatusOK, result)
 	})
 
-	// GET all persons
-	router.GET("/entries", func(c *gin.Context) {
+	// GET summary fields
+	router.GET("/entriesAll", func(c *gin.Context) {
 		var (
 			entry  Entry
 			entrys []Entry
@@ -131,6 +131,31 @@ func main() {
 		for rows.Next() {
 			// err = rows.Scan(&entry.id, &entry.date_added, &entry.project, &entry.file_directory, &entry.machine, &entry.technology, &entry.version, &entry.comments, &entry.is_active)
 			err = rows.Scan(&entry.Id, &entry.Date_Added, &entry.Project, &entry.File_Directory, &entry.Machine, &entry.Technology, &entry.Version, &entry.Comments, &entry.Is_Active)
+			entrys = append(entrys, entry)
+			
+			if err != nil {
+				fmt.Print(err.Error())
+			}
+		}
+		defer rows.Close()
+		c.JSON(http.StatusOK, gin.H{
+			"result": entrys,
+			"count":  len(entrys),
+		})
+	})
+	// GET all persons
+	router.GET("/entriesShort", func(c *gin.Context) {
+		var (
+			entry  Entry
+			entrys []Entry
+		)
+		rows, err := db.Query("select Id, Project, Technology, Comments from journal;")
+		if err != nil {
+			fmt.Print(err.Error())
+		}
+		for rows.Next() {
+			// err = rows.Scan(&entry.id, &entry.date_added, &entry.project, &entry.file_directory, &entry.machine, &entry.technology, &entry.version, &entry.comments, &entry.is_active)
+			err = rows.Scan(&entry.Id,  &entry.Project,  &entry.Technology, &entry.Comments)
 			entrys = append(entrys, entry)
 			
 			if err != nil {
@@ -171,14 +196,13 @@ func main() {
 		log.Println("file_directory =" + file_directory)
 		log.Println("machine =" + machine)
 		log.Println("technology =" + technology)
-		log.Println("version =" + strconv.Itoa(version))
+		log.Println("version =" + version)
 		log.Println("comments =" + comments)
-
-		log.Println("is_active= " + strconv.FormatBool(is_active))
+		log.Println("is_active= " + is_active)
 		//insert into journal(`project`, `date_added`, `machine`) values('dude', '2017/01/01', 'shit');
 		insertStatement = "insert into journal (`project`, `date_added`, `file_directory`, `machine`, `technology`, `version`, `comments`, `is_active`) "
-		insertStatement = insertStatement + " values('" + project + "','" + date_added + "','" + file_directory + "','" + machine + "','" +  technology + "',"
-		insertStatement = insertStatement + strconv.Itoa(version) + ",'" + comments + "'," + strconv.FormatBool(is_active) + ");"
+		insertStatement = insertStatement + " values('" + project + "','" + date_added + "','" + file_directory + "','" + machine + "','" +  technology + "','"
+		insertStatement = insertStatement + version + "','" + comments + "','" + is_active + "');"
 
 		log.Println("full insert string = " + insertStatement)
 
