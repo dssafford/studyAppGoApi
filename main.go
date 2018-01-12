@@ -78,10 +78,15 @@ func main() {
 	// - Preflight requests cached for 12 hours
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{"http://localhost:4500", "http://localhost:4200"}
+	config.AllowMethods =  []string{"GET", "OPTIONS"}
+	config.AllowCredentials = true
+	config.AllowHeaders =   []string{"Origin", "Authorization"}
 	// config.AddAllowOrigins("http://facebook.com")
 	// config.AllowOrigins == []string{"http://google.com", "http://facebook.com"}
 
+
 	router.Use(cors.New(config))
+	// router.Use(cors.Default())
 	//router.Run()
 
 	router.GET("/data", func(c *gin.Context) {
@@ -149,6 +154,10 @@ func main() {
 			entry  Entry
 			entrys []Entry
 		)
+
+		log.Println("Request Header == ")
+		log.Println(c.Request.Header)
+
 		rows, err := db.Query("select Id, Project, Technology, Comments from journal;")
 		if err != nil {
 			fmt.Print(err.Error())
@@ -305,6 +314,8 @@ func getPort() string {
 }
 
 func formattedUrl(url *url.URL) string {
+	// log.Println("Request == ")
+	// log.Println(url.R)
 	return fmt.Sprintf(
 		"%v@tcp(%v)%v?parseTime=true",
 		url.User,
