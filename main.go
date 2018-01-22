@@ -75,7 +75,7 @@ func main() {
 	// - No origin allowed by default
 	// - GET,POST, PUT, HEAD methods
 	// - Credentials share disabled
-	// - Preflight requests cached for 12 hours
+	// - Preflight requests cached for 12 hourss
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{"http://localhost:4500", "http://localhost:4200"}
 	config.AllowMethods =  []string{"GET", "OPTIONS"}
